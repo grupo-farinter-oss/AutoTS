@@ -42,6 +42,29 @@ def data_profile(df):
     return profile_df
 
 
+def lag_1_autocorrelation(df):
+    """Correlation of each column with its own shift by one.
+
+    Equivalent to the diagonal of the cross block of
+    ``np.corrcoef(df.bfill().T, df.shift(1).bfill().T)``: NaN where a column is
+    constant or still holds a NaN after the bfill. Computed column by column because
+    that full matrix is (2n x 2n) floats, so memory grew with n^2 regardless of the
+    series length (about 6 GiB at 14,000 series); this is O(n * T).
+
+    Args:
+        df (pd.DataFrame): wide style data with datetimeindex
+    """
+    current = df.bfill().to_numpy(dtype=float)
+    lagged = df.shift(1).bfill().to_numpy(dtype=float)
+    current = current - current.mean(axis=0)
+    lagged = lagged - lagged.mean(axis=0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        correlation = (current * lagged).sum(axis=0) / np.sqrt(
+            (current * current).sum(axis=0) * (lagged * lagged).sum(axis=0)
+        )
+    return np.clip(correlation, -1, 1)
+
+
 def summarize_series(df):
     """Summarize time series data.
 
@@ -75,12 +98,7 @@ def summarize_series(df):
 
     first_non_nan_index = df.replace(0, np.nan).reset_index(drop=True).notna().idxmax()
     try:
-        df_sum.loc["autocorr_1"] = np.diag(
-            np.corrcoef(df.bfill().T, df.shift(1).bfill().T)[
-                : df.shape[1], df.shape[1] :
-            ]
-        )
-        # df_sum.loc["autocorr_1"] = df.corrwith(df.shift(1))
+        df_sum.loc["autocorr_1"] = lag_1_autocorrelation(df)
     except Exception as e:
         print(f"summarize_series autocorr_1 failed with {repr(e)}")
     df_sum.loc["null_percentage"] = (first_non_nan_index / df.shape[0]).fillna(1)
