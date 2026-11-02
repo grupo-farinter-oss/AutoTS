@@ -125,3 +125,4 @@ temp*.py
 
 # Cloudflare Pages deploy staging (assembled in CI)
 _site/
+.venv/

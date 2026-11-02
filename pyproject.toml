@@ -77,3 +77,19 @@ exclude = ["build*", "dist*", "tests*"]
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.uv]
+# Solo afecta al uv.lock del entorno de desarrollo: "mcp" exige Python>=3.10 y tensorflow
+# no tiene ruedas para 3.14/emscripten,
+# pero el paquete publicado sigue soportando >=3.9 (requires-python no cambia).
+environments = [
+	"python_full_version >= '3.10' and python_full_version < '3.14' and sys_platform == 'linux'",
+	"python_full_version >= '3.10' and python_full_version < '3.14' and sys_platform == 'darwin'",
+	"python_full_version >= '3.10' and python_full_version < '3.14' and sys_platform == 'win32'",
+]
+# El código aún no es compatible con pandas 3 (fallan tests/test_seasonal.py); solo restringe el lock de desarrollo.
+constraint-dependencies = [
+	"pandas<3",
+	# autots/mcp/server.py usa la API de decoradores de mcp 1.x (@app.list_tools), retirada en mcp 2.
+	"mcp<2",
+]

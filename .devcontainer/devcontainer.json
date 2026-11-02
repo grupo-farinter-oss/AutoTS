@@ -1,0 +1,34 @@
+{
+	"name": "AutoTS (fork)",
+	// 3.11 tiene wheels para todas las dependencias opcionales; el paquete soporta >=3.9.
+	"image": "mcr.microsoft.com/devcontainers/python:1-3.11-bookworm",
+	"features": {
+		"ghcr.io/devcontainers/features/git:1": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	},
+	"postCreateCommand": "bash .devcontainer/post-create.sh",
+	"containerEnv": {
+		// Evita que matplotlib intente escribir en un HOME no disponible durante los tests.
+		"MPLCONFIGDIR": "/tmp/matplotlib",
+		"PYTHONDONTWRITEBYTECODE": "1",
+		// Mantiene el .venv dentro del repo y evita copias/hardlinks entre filesystems distintos.
+		"UV_LINK_MODE": "copy"
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"ms-toolsai.jupyter",
+				"eamodio.gitlens"
+			],
+			"settings": {
+				"python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+				"python.testing.unittestEnabled": true,
+				"python.testing.pytestEnabled": false,
+				"python.testing.unittestArgs": ["-v", "-s", "./tests", "-p", "test_*.py"],
+				"editor.rulers": [88]
+			}
+		}
+	}
+}
