@@ -59,6 +59,8 @@ model_classes = {
     'DatepartRegression': 'ML',
     'ETS': 'stat',
     'FBProphet': 'stat',
+    'FastARIMA': 'stat',
+    'FastProphet': 'stat',
     'GLM': 'stat',
     'GLS': 'stat',
     'MAR': 'stat',
@@ -100,6 +102,7 @@ model_classes = {
     'SeasonalNaive': 'naive',
     'ZeroesNaive': 'naive',
     "TVVAR": "stat",
+    "FastTVVAR": "stat",
     "BallTreeRegressionMotif": "motif",
     "PreprocessingExperts": "ensemble",
     "Ensemble": "ensemble",
@@ -180,6 +183,8 @@ fast = {
     'SeasonalNaive': 1,
     'GLM': 1,
     'ETS': 1,
+    'FastARIMA': 0.5,  # vectorised, scales to thousands of series
+    'FastProphet': 0.6,
     'VAR': 0.8,
     'VECM': 0.8,  # a bit on the higher side for memory usage
     'WindowRegression': 0.5,  # this gets slow with Transformer, KerasRNN
@@ -264,6 +269,8 @@ probabilistic = [
     'ARIMA',
     'GluonTS',
     'FBProphet',
+    'FastARIMA',
+    'FastProphet',
     'AverageValueNaive',
     # 'VARMAX',  # yes but so slow
     'DynamicFactor',
@@ -334,6 +341,8 @@ recombination_approved = [
     'GLM',
     'ARIMA',
     'FBProphet',
+    'FastARIMA',
+    'FastProphet',
     'GluonTS',
     'RollingRegression',
     'VAR',
@@ -396,6 +405,8 @@ regressor = [
     'GLM',
     'ARIMA',
     'FBProphet',
+    'FastARIMA',
+    'FastProphet',
     # 'RollingRegression',
     'UnobservedComponents',
     'VECM',

@@ -245,6 +245,34 @@ def ModelMonster(
         )
         return model
 
+    elif model == 'FastARIMA':
+        from autots.models.fast_arima import FastARIMA
+
+        model = FastARIMA(
+            frequency=frequency,
+            prediction_interval=prediction_interval,
+            holiday_country=holiday_country,
+            random_seed=random_seed,
+            verbose=verbose,
+            n_jobs=n_jobs,
+            **parameters,
+        )
+        return model
+
+    elif model == 'FastProphet':
+        from autots.models.fast_prophet import FastProphet
+
+        model = FastProphet(
+            frequency=frequency,
+            prediction_interval=prediction_interval,
+            holiday_country=holiday_country,
+            random_seed=random_seed,
+            verbose=verbose,
+            n_jobs=n_jobs,
+            **parameters,
+        )
+        return model
+
     elif model in ['FBProphet', "Prophet"]:
         from autots.models.prophet import FBProphet
 
@@ -668,6 +696,19 @@ def ModelMonster(
         )
     elif model == 'TVVAR':
         return TVVAR(
+            frequency=frequency,
+            prediction_interval=prediction_interval,
+            holiday_country=holiday_country,
+            random_seed=random_seed,
+            verbose=verbose,
+            forecast_length=forecast_length,
+            n_jobs=n_jobs,
+            **parameters,
+        )
+    elif model == 'FastTVVAR':
+        from autots.models.fast_tvvar import FastTVVAR
+
+        return FastTVVAR(
             frequency=frequency,
             prediction_interval=prediction_interval,
             holiday_country=holiday_country,
