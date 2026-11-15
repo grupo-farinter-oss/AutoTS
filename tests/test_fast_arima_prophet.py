@@ -201,5 +201,33 @@ class FastProphetTests(unittest.TestCase):
             self.assertIsInstance(model, cls)
 
 
+class SeriesIndependenceTests(unittest.TestCase):
+    """no_shared / univariate registration: a series' forecast must not depend on the
+    other series in the frame (horizontal ensembles refit on a subset of columns)."""
+
+    def test_forecast_unchanged_when_other_series_dropped(self):
+        df = _synthetic_wide(n_series=5, n_rows=300)
+        df.iloc[:15, 1] = np.nan  # leading NaNs exercise Prophet's per-series masking
+        df.iloc[100:108, 3] = np.nan
+        keep = ["s1", "s3"]
+        cases = [
+            (FastARIMA, dict(p=2, d=1, q=1)),
+            (FastProphet, dict()),
+            (FastProphet, dict(seasonality_mode="multiplicative")),
+        ]
+        for cls, params in cases:
+            with self.subTest(model=cls.__name__, params=params):
+                kwargs = dict(frequency="D", **params)
+                full = cls(**kwargs).fit(df).predict(10)
+                subset = cls(**kwargs).fit(df[keep]).predict(10)
+                for attribute in ("forecast", "lower_forecast", "upper_forecast"):
+                    np.testing.assert_allclose(
+                        getattr(full, attribute)[keep].to_numpy(),
+                        getattr(subset, attribute).to_numpy(),
+                        rtol=1e-8,
+                        atol=1e-8,
+                    )
+
+
 if __name__ == "__main__":
     unittest.main()
