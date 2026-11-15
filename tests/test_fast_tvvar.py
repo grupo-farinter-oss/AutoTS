@@ -141,5 +141,52 @@ class FastTVVARParityTests(unittest.TestCase):
         self.assertIsInstance(model, FastTVVAR)
 
 
+class SingleStepForecastFeatureMismatchTests(unittest.TestCase):
+    """Root cause of "FastTVVAR: forecast features do not match training features".
+
+    ``date_part(..., 'common_fourier*')`` infers the seasonality from the span of the
+    index it is given; a one-date forecast index cannot be inferred and falls back to a
+    daily assumption, so a monthly model gets 36 forecast columns vs 26 at fit time.
+    FastTVVAR names the problem, TVVAR dies in matmul. (With holiday_countries_used=True
+    both fail even earlier: holiday_flag cannot infer a frequency from one date.)
+    The limitation lives in
+    autots.tools.seasonal.date_part (shared by many models), not in FastTVVAR.
+    If date_part gains single-step support, replace the assertRaises with parity checks.
+    """
+
+    @staticmethod
+    def _monthly(n_series=3, n_rows=96):
+        rng = np.random.default_rng(0)
+        index = pd.date_range("2016-01-01", periods=n_rows, freq="MS")
+        t = np.arange(n_rows)[:, None]
+        values = 100 + 0.3 * t + 8 * np.sin(2 * np.pi * t / 12) + rng.normal(0, 1, (n_rows, n_series))
+        return pd.DataFrame(values, index=index, columns=list("abc")[:n_series])
+
+    def test_single_step_forecast_fails_in_both_models(self):
+        df = self._monthly()
+        params = dict(
+            frequency="MS",
+            datepart_method="common_fourier",
+            lags=[1],
+            holiday_countries_used=False,
+        )
+        with self.assertRaisesRegex(ValueError, "forecast features do not match"):
+            FastTVVAR(**params).fit(df).predict(1)
+        with self.assertRaises(ValueError):  # matmul shape error
+            TVVAR(**params).fit(df).predict(1)
+
+    def test_multi_step_forecast_matches_tvvar(self):
+        df = self._monthly()
+        params = dict(
+            frequency="MS",
+            datepart_method="common_fourier",
+            lags=[1],
+            holiday_countries_used=False,
+        )
+        reference = TVVAR(**params).fit(df).predict(3).forecast
+        fast = FastTVVAR(**params).fit(df).predict(3).forecast
+        np.testing.assert_allclose(fast.to_numpy(), reference.to_numpy(), rtol=1e-8, atol=1e-8)
+
+
 if __name__ == "__main__":
     unittest.main()
