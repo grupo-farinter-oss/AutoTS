@@ -93,3 +93,10 @@ constraint-dependencies = [
 	# autots/mcp/server.py usa la API de decoradores de mcp 1.x (@app.list_tools), retirada en mcp 2.
 	"mcp<2",
 ]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+    "prophet>=1.5.0",
+    "pytest>=9.2.0",
+]
