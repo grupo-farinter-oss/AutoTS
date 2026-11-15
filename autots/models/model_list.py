@@ -52,6 +52,9 @@ all_models = [
     "MambaSSM",
     "pMLP",
     "TVAModel",
+    "FastTVVAR",
+    "FastARIMA",
+    "FastProphet",
 ]
 # used for graphing, not for model selection
 model_classes = {
@@ -252,7 +255,13 @@ experimental = [
     'MotifSimulation',
 ]
 # models that perform slowly at scale
-slow = list((set(all_models) - set(fast.keys())) - set(experimental))
+# the Fast* vectorised variants are the fast path to slower models, so never "slow"
+# (FastTVVAR is not in fast, only because TVVAR is not either)
+slow = list(
+    (set(all_models) - set(fast.keys()))
+    - set(experimental)
+    - {'FastTVVAR', 'FastARIMA', 'FastProphet'}
+)
 # use GPU
 gpu = [
     'GluonTS',
@@ -293,6 +302,7 @@ probabilistic = [
     "NeuralForecast",  # mostly
     "BasicLinearModel",
     "TVVAR",
+    "FastTVVAR",
     "BallTreeRegressionMotif",
     # "PreprocessingExperts",
     # "MambaSSM",  # insanely slow
@@ -323,6 +333,7 @@ multivariate = [
     "NeuralForecast",
     "DMD",
     "TVVAR",
+    "FastTVVAR",
     "BallTreeRegressionMotif",
     "TVAModel",
 ]
@@ -372,6 +383,7 @@ recombination_approved = [
     "DMD",
     "BasicLinearModel",
     "TVVAR",
+    "FastTVVAR",
     "BallTreeRegressionMotif",
     "PreprocessingExperts",
     "MambaSSM",
@@ -386,7 +398,9 @@ no_shared = [
     'GLM',
     'ETS',
     'ARIMA',
+    'FastARIMA',
     'FBProphet',
+    'FastProphet',
     'SeasonalNaive',
     'UnobservedComponents',
     "GLS",
@@ -424,6 +438,7 @@ regressor = [
     "NeuralForecast",
     "BasicLinearModel",
     "TVVAR",
+    "FastTVVAR",
     "BallTreeRegressionMotif",
     "MambaSSM",
     "pMLP",
