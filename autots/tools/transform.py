@@ -3408,6 +3408,9 @@ class AlignLastValue(EmptyTransformer):
 
     @staticmethod
     def find_centerpoint(df, rows, lag, mean_type="arithmetic"):
+        # a lag deeper than the history would give an empty window (NaN center);
+        # fall back to the oldest available row(s) instead
+        lag = min(lag, df.shape[0])
         if rows <= 1:
             if lag > 1:
                 center = df.iloc[-lag, :]
@@ -3443,6 +3446,20 @@ class AlignLastValue(EmptyTransformer):
         """
         return df
 
+    def _compute_adjustment(self, first_forecast_row):
+        """Shift (additive) or factor (multiplicative) per series.
+
+        Series without a usable center (no values in the lookback window) get the
+        neutral value, 0 or 1, so missing history never turns the forecast into NaN.
+        """
+        if self.method == "multiplicative":
+            adjustment = (
+                1
+                + ((self.center / first_forecast_row.replace(0, 1)) - 1) * self.strength
+            )
+            return adjustment.fillna(1)
+        return (self.strength * (self.center - first_forecast_row)).fillna(0)
+
     def inverse_transform(self, df, trans_method: str = "forecast", adjustment=None):
         """Return data to original *or* forecast form.
 
@@ -3456,14 +3473,10 @@ class AlignLastValue(EmptyTransformer):
         if trans_method == "original":
             return df
         else:
+            if self.adjustment is None:
+                self.adjustment = self._compute_adjustment(df.iloc[0])
             if self.first_value_only:
                 if self.method == "multiplicative":
-                    if self.adjustment is None:
-                        self.adjustment = (
-                            1
-                            + ((self.center / df.iloc[0].replace(0, 1)) - 1)
-                            * self.strength
-                        )
                     return pd.concat(
                         [
                             df.iloc[0:1] * self.adjustment,
@@ -3472,8 +3485,6 @@ class AlignLastValue(EmptyTransformer):
                         axis=0,
                     )
                 else:
-                    if self.adjustment is None:
-                        self.adjustment = self.strength * (self.center - df.iloc[0])
                     return pd.concat(
                         [
                             df.iloc[0:1] + self.adjustment,
@@ -3483,12 +3494,6 @@ class AlignLastValue(EmptyTransformer):
                     )
             else:
                 if self.method == "multiplicative":
-                    if self.adjustment is None:
-                        self.adjustment = (
-                            1
-                            + ((self.center / df.iloc[0].replace(0, 1)) - 1)
-                            * self.strength
-                        )
                     if self.threshold is not None:
                         return df.where(
                             self.adjustment.abs() <= self.threshold,
@@ -3497,8 +3502,6 @@ class AlignLastValue(EmptyTransformer):
                     else:
                         return df * self.adjustment
                 else:
-                    if self.adjustment is None:
-                        self.adjustment = self.strength * (self.center - df.iloc[0])
                     if self.threshold is not None:
                         return df.where(
                             self.adjustment.abs() <= self.threshold,
