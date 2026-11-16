@@ -1650,6 +1650,14 @@ def _eval_prediction_for_template(
     df_train,
     custom_metric=None,
 ):
+    # A NaN forecast would score smape 0.0 (nansum) and be averaged with skipna,
+    # so it could win the search. Raising marks the candidate as failed instead.
+    if not np.isfinite(df_forecast.forecast.to_numpy()).all():
+        raise ValueError(
+            "Model {} returned NaN or inf in the forecast; candidate treated as failed".format(
+                model_str
+            )
+        )
     per_ts = True if 'distance' in ensemble else False
     model_error = df_forecast.evaluate(
         actuals,
@@ -1889,7 +1897,7 @@ horizontal_post_processors = [
         "fillna": "fake_date",
         "transformations": {
             "0": "AlignLastValue",
-            "2": "HistoricValues",
+            "1": "HistoricValues",
         },
         "transformation_params": {
             "0": {
